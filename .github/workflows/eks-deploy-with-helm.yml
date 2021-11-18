@@ -1,0 +1,56 @@
+name: Deploy to helm chart in EKS cluster
+
+on:
+  workflow_call:
+    inputs:
+      eks-cluster:
+        description: 'Name of the cluster to use'
+        required: true
+        type: string
+      helm-release:
+        description: 'Name of the helm release'
+        required: true
+        type: string
+      chart-directory:
+        description: 'Directory which contains the chart'
+        required: true
+        type: string
+      values-file:
+        description: 'Path of the file with the helm values, relative to the root of the repo'
+        required: true
+        type: string
+      image-tag:
+        description: 'Tag of the image to deploy'
+        required: true
+        type: string
+      eks-region:
+        description: 'Region of the EKS cluster'
+        default: 'eu-central-1'
+        required: false
+        type: string
+    secrets:
+      aws-access-key-id:
+        required: true
+      aws-secret-access-key:
+        required: true
+
+# Helm and AWS cli are already installed in ubuntu-latest (https://github.com/actions/virtual-environments/blob/releases/ubuntu20/20211114/images/linux/Ubuntu2004-README.md)
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.aws-access-key-id }}
+          aws-secret-access-key: ${{ secrets.aws-secret-access-key }}
+          aws-region: ${{ inputs.eks-region }}
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+      - name: Get kube config
+        run: aws eks --region ${{ inputs.eks-region }} update-kubeconfig --name ${{ inputs.eks-cluster }}
+      - name: deploy
+        run: |
+          helm upgrade --install -f ${{ inputs.values-file }} --set image.tag=${{ inputs.image-tag }} ${{ inputs.helm-release }} ${{ inputs.chart-directory }}
