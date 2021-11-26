@@ -1,3 +1,5 @@
+Ungrades with helm, while passing the `image.tag` value.
+
 Example Usage
 
 ```yml
