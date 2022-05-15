@@ -7,6 +7,11 @@ on:
         description: 'Name of the cluster to use'
         required: true
         type: string
+      helm-namespace:
+        description: 'Namespace to install under'
+        default: 'default'
+        required: false
+        type: string
       helm-release:
         description: 'Name of the helm release'
         required: true
@@ -52,4 +57,4 @@ jobs:
         run: aws eks --region ${{ inputs.eks-region }} update-kubeconfig --name ${{ inputs.eks-cluster }}
       - name: deploy
         run: |
-          helm upgrade --install -f ${{ inputs.values-file }} --set image.tag=${{ inputs.image-tag }} ${{ inputs.helm-release }} ${{ inputs.chart-directory }}
+          helm upgrade -n ${{ inputs.helm-namespace }} --install -f ${{ inputs.values-file }} --set image.tag=${{ inputs.image-tag }} ${{ inputs.helm-release }} ${{ inputs.chart-directory }}
